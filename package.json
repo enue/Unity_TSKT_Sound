@@ -1,0 +1,13 @@
+{
+    "name": "com.github.enue.tskt_sound",
+    "displayName": "TSKT Sound",
+    "version": "0.0.0",
+    "unity": "2019.2",
+    "description": "",
+    "keywords": [],
+    "category": "",
+    "dependencies": {
+        "com.github.enue.tskt_tween": "0.3.0",
+        "com.github.enue.tskt_file": "0.2.1"
+    }
+}

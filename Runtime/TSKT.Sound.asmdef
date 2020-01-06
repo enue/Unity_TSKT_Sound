@@ -1,0 +1,16 @@
+{
+    "name": "TSKT.Sound",
+    "references": [
+        "UniRx.Async",
+        "TSKT.Tween",
+        "TSKTFile"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": []
+}
