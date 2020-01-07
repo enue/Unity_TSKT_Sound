@@ -28,15 +28,14 @@ namespace TSKT
 
             var clip = AudioSource.clip;
             AudioSource.clip = null;
-            if (clip)
+            if (clip
+                && !clip.preloadAudioData
+                && clip.loadState == AudioDataLoadState.Loaded)
             {
-                if (!clip.preloadAudioData)
+                if (enabledInstances.Count == 0
+                    || !enabledInstances.Any(_ => _.Clip == clip))
                 {
-                    if (enabledInstances.Count == 0
-                        || !enabledInstances.Any(_ => _.Clip == clip))
-                    {
-                        clip.UnloadAudioData();
-                    }
+                    clip.UnloadAudioData();
                 }
             }
         }
