@@ -91,7 +91,7 @@ namespace TSKT
             {
                 fadingOut = true;
 
-                await Tween.SoundVolume(gameObject, duration).To(0f).UniTask;
+                await Tween.SoundVolume(AudioSource, duration).To(0f).UniTask;
                 AudioSource.Stop();
 
                 fadingOut = false;
