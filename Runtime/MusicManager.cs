@@ -4,7 +4,7 @@ using UniRx.Async;
 
 namespace TSKT
 {
-    [RequireComponent(typeof(AudioSource), typeof(AudioListener))]
+    [RequireComponent(typeof(AudioSource))]
     public class MusicManager : MonoBehaviour
     {
         AudioSource audioSource;
