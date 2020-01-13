@@ -1,12 +1,19 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UniRx.Async;
+using UnityEngine.Audio;
 
 namespace TSKT
 {
     [RequireComponent(typeof(AudioSource))]
     public class MusicManager : MonoBehaviour
     {
+        [SerializeField]
+        AudioMixerSnapshot defaultSnapshot = default;
+
+        [SerializeField]
+        AudioMixerSnapshot muteSnapshot = default;
+
         AudioSource audioSource;
         AudioSource AudioSource => audioSource ?? (audioSource = GetComponent<AudioSource>());
 
@@ -22,16 +29,16 @@ namespace TSKT
             Instance = this;
         }
 
-        public void Play(string musicName)
+        public void Play(string musicName, float fadeOutDuration = 1f)
         {
-            Play(MusicStore?.Get(musicName));
+            Play(MusicStore?.Get(musicName), fadeOutDuration);
         }
 
-        public void Play(MusicSymbol symbol)
+        public void Play(MusicSymbol symbol, float fadeOutDuration = 1f)
         {
             if (symbol)
             {
-                Play(MusicStore?.Get(symbol.name));
+                Play(MusicStore?.Get(symbol.name), fadeOutDuration);
             }
             else
             {
@@ -39,7 +46,7 @@ namespace TSKT
             }
         }
 
-        public async void Play(Music music)
+        public async void Play(Music music, float fadeOutDuration = 1f)
         {
             if (CurrentMusic == music)
             {
@@ -48,7 +55,7 @@ namespace TSKT
 
             if (!fadingOut)
             {
-                FadeOut(1f).Forget();
+                FadeOut(fadeOutDuration).Forget();
             }
 
             ++generation;
@@ -91,8 +98,35 @@ namespace TSKT
             {
                 fadingOut = true;
 
-                await Tween.SoundVolume(AudioSource, duration).To(0f).UniTask;
+                if (muteSnapshot)
+                {
+                    Debug.Assert(defaultSnapshot, "require defaultSnapshot");
+                    muteSnapshot.TransitionTo(duration);
+
+                    switch (muteSnapshot.audioMixer.updateMode)
+                    {
+                        case AudioMixerUpdateMode.Normal:
+                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: false);
+                            break;
+                        case AudioMixerUpdateMode.UnscaledTime:
+                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: true);
+                            break;
+                        default:
+                            Debug.LogError("unknown updateMode : " + muteSnapshot.audioMixer.updateMode);
+                            break;
+                    }
+                }
+                else
+                {
+                    await Tween.SoundVolume(AudioSource, duration).To(0f).UniTask;
+                }
                 AudioSource.Stop();
+
+                if (defaultSnapshot)
+                {
+                    Debug.Assert(muteSnapshot, "require muteSnapshot");
+                    defaultSnapshot.TransitionTo(0f);
+                }
 
                 fadingOut = false;
             }
