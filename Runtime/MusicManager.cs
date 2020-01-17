@@ -15,7 +15,7 @@ namespace TSKT
         AudioMixerSnapshot muteSnapshot = default;
 
         AudioSource audioSource;
-        AudioSource AudioSource => audioSource ?? (audioSource = GetComponent<AudioSource>());
+        AudioSource AudioSource => audioSource ? audioSource : (audioSource = GetComponent<AudioSource>());
 
         public Music CurrentMusic { get; private set; }
         public IMusicStore MusicStore { get; set; }

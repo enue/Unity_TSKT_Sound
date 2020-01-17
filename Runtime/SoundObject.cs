@@ -11,7 +11,7 @@ namespace TSKT
         readonly static HashSet<SoundObject> enabledInstances = new HashSet<SoundObject>();
 
         AudioSource audioSource;
-        AudioSource AudioSource => audioSource ?? (audioSource = GetComponent<AudioSource>());
+        AudioSource AudioSource => audioSource ? audioSource : (audioSource = GetComponent<AudioSource>());
 
         float startedTime;
         public float ElapsedTime => Time.realtimeSinceStartup - startedTime;
