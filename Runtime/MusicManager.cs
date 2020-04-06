@@ -20,7 +20,6 @@ namespace TSKT
         public Music CurrentMusic { get; private set; }
         public IMusicStore MusicStore { get; set; }
         bool fadingOut;
-        int generation;
 
         static public MusicManager Instance { get; private set; }
 
@@ -53,34 +52,40 @@ namespace TSKT
                 return;
             }
 
-            if (!fadingOut)
+            if (music && music.Asset)
             {
-                FadeOut(fadeOutDuration).Forget();
+                music.Asset.LoadAudioData();
             }
-
-            ++generation;
-            var thisTaskGeneration = generation;
-
             CurrentMusic = music;
 
-            music.Asset.LoadAudioData();
-            await UniTask.WaitWhile(() => music.Asset.loadState != AudioDataLoadState.Loaded);
-            await UniTask.WaitWhile(() => AudioSource.isPlaying);
-
-            if (generation == thisTaskGeneration)
+            if (fadingOut)
             {
-                if (AudioSource.clip
-                    && (AudioSource.clip != music.Asset))
+                return;
+            }
+
+            await FadeOutInternal(fadeOutDuration);
+
+            var previousClip = AudioSource.clip;
+            if (previousClip)
+            {
+                var currentMusicAsset = CurrentMusic ? CurrentMusic.Asset : null;
+                if (previousClip != currentMusicAsset)
                 {
-                    var previousClip = AudioSource.clip;
                     previousClip.UnloadAudioData();
                 }
+            }
 
-                AudioSource.clip = music.Asset;
-                AudioSource.volume = music.Volume;
+            if (CurrentMusic)
+            {
+                AudioSource.clip = CurrentMusic.Asset;
+                AudioSource.volume = CurrentMusic.Volume;
                 AudioSource.time = 0f;
-                AudioSource.loop = music.Loop;
+                AudioSource.loop = CurrentMusic.Loop;
                 AudioSource.Play();
+            }
+            else
+            {
+                AudioSource.clip = null;
             }
         }
 
@@ -89,11 +94,20 @@ namespace TSKT
             FadeOut(0f).Forget();
         }
 
-        public async UniTask FadeOut(float duration)
+        public UniTask FadeOut(float fadeOutDutation)
         {
-            ++generation;
+            Play(default(Music), fadeOutDutation);
+            return UniTask.WaitWhile(() => fadingOut);
+        }
 
-            CurrentMusic = null;
+        async UniTask FadeOutInternal(float duration)
+        {
+            if (fadingOut)
+            {
+                await UniTask.WaitWhile(() => fadingOut);
+                return;
+            }
+
             if (AudioSource.isPlaying)
             {
                 fadingOut = true;
@@ -132,6 +146,6 @@ namespace TSKT
             }
         }
 
-        public UnityEngine.Audio.AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
+        public AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
     }
 }
