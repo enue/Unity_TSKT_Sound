@@ -65,6 +65,18 @@ namespace TSKT
             }
         }
 
+        public bool IsPlaying()
+        {
+            foreach (var it in soundObjects)
+            {
+                if (it.IsPlaying)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public bool IsPlaying(AudioClip clip)
         {
             foreach (var it in soundObjects)
