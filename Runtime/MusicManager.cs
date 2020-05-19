@@ -17,6 +17,8 @@ namespace TSKT
         AudioSource audioSource;
         AudioSource AudioSource => audioSource ? audioSource : (audioSource = GetComponent<AudioSource>());
 
+        public (Music currentMusic, float position) State => (CurrentMusic, AudioSource.time);
+
         public Music CurrentMusic { get; private set; }
         public IMusicStore MusicStore { get; set; }
         bool fadingOut;
@@ -28,24 +30,24 @@ namespace TSKT
             Instance = this;
         }
 
-        public void Play(string musicName, float fadeOutDuration = 1f)
+        public void Play(string musicName, float fadeOutDuration = 1f, float position = 0f)
         {
-            Play(MusicStore?.Get(musicName), fadeOutDuration);
+            Play(MusicStore?.Get(musicName), fadeOutDuration: fadeOutDuration, position: position);
         }
 
-        public void Play(MusicSymbol symbol, float fadeOutDuration = 1f)
+        public void Play(MusicSymbol symbol, float fadeOutDuration = 1f, float position = 0f)
         {
             if (symbol)
             {
-                Play(MusicStore?.Get(symbol.name), fadeOutDuration);
+                Play(MusicStore?.Get(symbol.name), fadeOutDuration: fadeOutDuration, position: position);
             }
             else
             {
-                Play(default(Music));
+                Play(default(Music), fadeOutDuration: fadeOutDuration);
             }
         }
 
-        public async void Play(Music music, float fadeOutDuration = 1f)
+        public async void Play(Music music, float fadeOutDuration = 1f, float position = 0f)
         {
             if (CurrentMusic == music)
             {
@@ -79,7 +81,7 @@ namespace TSKT
             {
                 AudioSource.clip = CurrentMusic.Asset;
                 AudioSource.volume = CurrentMusic.Volume;
-                AudioSource.time = 0f;
+                AudioSource.time = position;
                 AudioSource.loop = CurrentMusic.Loop;
                 AudioSource.Play();
             }
