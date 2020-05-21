@@ -30,16 +30,16 @@ namespace TSKT
             Instance = this;
         }
 
-        public void Play(string musicName, float fadeOutDuration = 1f, float position = 0f)
+        public void Play(string musicName, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
-            Play(MusicStore?.Get(musicName), fadeOutDuration: fadeOutDuration, position: position);
+            Play(MusicStore?.Get(musicName), fadeOutDuration: fadeOutDuration, position: position, fadeInDuration: fadeInDuration);
         }
 
-        public void Play(MusicSymbol symbol, float fadeOutDuration = 1f, float position = 0f)
+        public void Play(MusicSymbol symbol, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
             if (symbol)
             {
-                Play(MusicStore?.Get(symbol.name), fadeOutDuration: fadeOutDuration, position: position);
+                Play(MusicStore?.Get(symbol.name), fadeOutDuration: fadeOutDuration, position: position, fadeInDuration: fadeInDuration);
             }
             else
             {
@@ -47,7 +47,7 @@ namespace TSKT
             }
         }
 
-        public async void Play(Music music, float fadeOutDuration = 1f, float position = 0f)
+        public async void Play(Music music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
             if (CurrentMusic == music)
             {
@@ -80,10 +80,30 @@ namespace TSKT
             if (CurrentMusic)
             {
                 AudioSource.clip = CurrentMusic.Asset;
-                AudioSource.volume = CurrentMusic.Volume;
                 AudioSource.time = position;
                 AudioSource.loop = CurrentMusic.Loop;
                 AudioSource.Play();
+
+                if (muteSnapshot)
+                {
+                    AudioSource.volume = CurrentMusic.Volume;
+                    Debug.Assert(defaultSnapshot, "require defaultSnapshot");
+                    defaultSnapshot.TransitionTo(fadeInDuration);
+                }
+                else
+                {
+                    if (fadeInDuration > 0f)
+                    {
+                        await Tween.SoundVolume(AudioSource, fadeInDuration)
+                            .From(0f)
+                            .To(CurrentMusic.Volume)
+                            .UniTask;
+                    }
+                    else
+                    {
+                        AudioSource.volume = CurrentMusic.Volume;
+                    }
+                }
             }
             else
             {
@@ -137,12 +157,6 @@ namespace TSKT
                     await Tween.SoundVolume(AudioSource, duration).To(0f).UniTask;
                 }
                 AudioSource.Stop();
-
-                if (defaultSnapshot)
-                {
-                    Debug.Assert(muteSnapshot, "require muteSnapshot");
-                    defaultSnapshot.TransitionTo(0f);
-                }
 
                 fadingOut = false;
             }
