@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
-using UniRx.Async;
 using UnityEngine.Audio;
+using Cysharp.Threading.Tasks;
 
 namespace TSKT
 {
