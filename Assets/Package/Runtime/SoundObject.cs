@@ -40,10 +40,11 @@ namespace TSKT
             }
         }
 
-        public void Play(AudioClip clip, bool loop = false)
+        public void Play(AudioClip clip, bool loop, float volume)
         {
             AudioSource.clip = clip;
             AudioSource.loop = loop;
+            AudioSource.volume = volume;
             AudioSource.Play();
             startedTime = Time.realtimeSinceStartup;
 
@@ -53,6 +54,7 @@ namespace TSKT
         public AudioClip Clip => AudioSource.clip;
         public bool IsPlaying => AudioSource.isPlaying;
         public bool Loop => AudioSource.loop;
+        public float Volume => AudioSource.volume;
 
         void Update()
         {

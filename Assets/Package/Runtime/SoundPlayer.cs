@@ -14,7 +14,7 @@ namespace TSKT
 
         readonly List<SoundObject> soundObjects = new List<SoundObject>();
 
-        public void Play(AudioClip audio, bool loop = false, string channel = null)
+        public void Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f)
         {
             Debug.Assert(audio, "audio cannot null");
             if (!audio)
@@ -42,7 +42,7 @@ namespace TSKT
                 soundObject = obj.GetComponent<SoundObject>();
                 soundObjects.Add(soundObject);
             }
-            soundObject.Play(audio, loop);
+            soundObject.Play(audio, loop: loop, volume: volume);
             soundObject.Channel = channel;
         }
 
