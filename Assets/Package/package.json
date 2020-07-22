@@ -7,10 +7,10 @@
     "keywords": [],
     "category": "",
     "dependencies": {
-        "com.cysharp.unitask": "2.0.13",
-        "com.github.enue.tskt_container": "0.5.2",
+        "com.cysharp.unitask": "2.0.26",
+        "com.github.enue.tskt_container": "0.5.3",
         "com.github.enue.tskt_file": "0.7.0",
-        "com.github.enue.tskt_math": "0.8.3",
+        "com.github.enue.tskt_math": "0.14.9",
         "com.github.enue.tskt_tween": "0.5.0"
     }
 }
