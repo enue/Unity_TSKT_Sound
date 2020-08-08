@@ -5,7 +5,7 @@
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "547b700ba7c2c5e70b392ec1cae79f93a294540a"
+      "hash": "c99d3eb3c3ebee0a9de569ac4dad6f11f70f100d"
     },
     "com.github.enue.tskt_container": {
       "version": "https://github.com/enue/Unity_TSKT_Container.git?path=Assets/Package",
@@ -29,7 +29,7 @@
         "com.cysharp.unitask": "2.0.13",
         "com.github.enue.tskt_editor": "0.0.1"
       },
-      "hash": "4b82f3a62d9111eb7cbcae94f6215a60a660e608"
+      "hash": "b8087bed3fdd11df0f62342e71d5fdba16eb04d3"
     },
     "com.github.enue.tskt_math": {
       "version": "https://github.com/enue/Unity_TSKT_Math.git?path=Assets/Package",

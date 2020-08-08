@@ -13,7 +13,11 @@ namespace TSKT
         public async void Add(string filename, int priorityOffset)
         {
             var loadeds = await AssetBundleUtil.LoadAllAsync<Music>(filename, priorityOffset: priorityOffset);
-            musics = musics.Concat(loadeds).ToArray();
+            if (loadeds.Succeeded)
+            {
+                musics = musics.Concat(loadeds.value).ToArray();
+            }
+            UnityEngine.Assertions.Assert.IsTrue(loadeds.Succeeded, "failed loading music assetbundle. " + loadeds.exception?.ToString());
         }
 
         public Music Get(string musicName)
