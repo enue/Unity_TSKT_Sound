@@ -19,7 +19,14 @@ namespace TSKT
                 Debug.Assert(musics != null, "music store is null");
                 return null;
             }
-            return musics.FirstOrDefault(_ => _.name == musicName);
+            foreach (var it in musics)
+            {
+                if (it.name == musicName)
+                {
+                    return it;
+                }
+            }
+            return null;
         }
 
 #if UNITY_EDITOR
