@@ -4,6 +4,7 @@ using UnityEngine;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 
+#if TSKT_SOUND_ASSETBUNDLE_SUPPORT && TSKT_SOUND_FILE_SUPPORT
 namespace TSKT
 {
     public class MusicAssetBundleStore : IMusicStore
@@ -34,3 +35,4 @@ namespace TSKT
         }
     }
 }
+#endif

@@ -12,6 +12,17 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.modules.assetbundle",
+            "expression": "",
+            "define": "TSKT_SOUND_ASSETBUNDLE_SUPPORT"
+        },
+        {
+            "name": "com.github.enue.tskt_file",
+            "expression": "",
+            "define": "TSKT_SOUND_FILE_SUPPORT"
+        }
+    ],
     "noEngineReferences": false
 }
