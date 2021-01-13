@@ -18,6 +18,7 @@ namespace TSKT
         AudioSource AudioSource => audioSource ? audioSource : (audioSource = GetComponent<AudioSource>());
 
         public (Music currentMusic, float position) State => (CurrentMusic, AudioSource.time);
+        public bool IsPlaying => AudioSource.isPlaying;
 
         public Music CurrentMusic { get; private set; }
         public IMusicStore MusicStore { get; set; }
