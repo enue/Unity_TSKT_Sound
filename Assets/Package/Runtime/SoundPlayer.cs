@@ -14,23 +14,15 @@ namespace TSKT
 
         readonly List<SoundObject> soundObjects = new List<SoundObject>();
 
-        public void Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f, int priority = 0)
+        public SoundObject Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f)
         {
             if (!audio)
             {
-                return;
+                return null;
             }
 
             if (channel != null)
             {
-                if (TryGetPlayingChannel(channel, out var current))
-                {
-                    if (current.Priority > priority)
-                    {
-                        return;
-                    }
-                }
-
                 // 同じチャンネルの音を止める
                 Stop(channel);
             }
@@ -42,7 +34,7 @@ namespace TSKT
                     && it.ElapsedTime < interval
                     && it.IsPlaying)
                 {
-                    return;
+                    return null;
                 }
             }
 
@@ -55,7 +47,8 @@ namespace TSKT
             }
             soundObject.Play(audio, loop: loop, volume: volume);
             soundObject.Channel = channel;
-            soundObject.Priority = priority;
+
+            return soundObject;
         }
 
         public void Stop(string channel)
@@ -112,6 +105,17 @@ namespace TSKT
                 }
             }
             soundObject = null;
+            return false;
+        }
+
+        public bool TryGetPriority(string channel, out int priority)
+        {
+            if (TryGetPlayingChannel(channel, out var current))
+            {
+                priority = current.Priority;
+                return true;
+            }
+            priority = 0;
             return false;
         }
 
