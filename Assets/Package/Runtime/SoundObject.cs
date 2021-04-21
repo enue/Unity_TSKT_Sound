@@ -17,6 +17,7 @@ namespace TSKT
         public float ElapsedTime => Time.realtimeSinceStartup - startedTime;
 
         public string Channel { get; set; }
+        public int Priority { get; set; }
 
         void OnEnable()
         {

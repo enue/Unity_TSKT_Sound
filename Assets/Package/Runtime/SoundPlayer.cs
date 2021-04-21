@@ -14,25 +14,36 @@ namespace TSKT
 
         readonly List<SoundObject> soundObjects = new List<SoundObject>();
 
-        public void Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f)
+        public void Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f, int priority = 0)
         {
-            Debug.Assert(audio, "audio cannot null");
             if (!audio)
             {
                 return;
             }
 
-            // 同じチャンネルの音を止める
             if (channel != null)
             {
+                if (TryGetPlayingChannel(channel, out var current))
+                {
+                    if (current.Priority > priority)
+                    {
+                        return;
+                    }
+                }
+
+                // 同じチャンネルの音を止める
                 Stop(channel);
             }
 
             // 同じ音を同時に再生しない
-            if (soundObjects.Count > 0
-                && soundObjects.Any(_ => _.Clip == audio && _.ElapsedTime < interval))
+            foreach (var it in soundObjects)
             {
-                return;
+                if (it.Clip == audio
+                    && it.ElapsedTime < interval
+                    && it.IsPlaying)
+                {
+                    return;
+                }
             }
 
             var soundObject = soundObjects.FirstOrDefault(_ => !_.Clip);
@@ -44,6 +55,7 @@ namespace TSKT
             }
             soundObject.Play(audio, loop: loop, volume: volume);
             soundObject.Channel = channel;
+            soundObject.Priority = priority;
         }
 
         public void Stop(string channel)
@@ -86,6 +98,20 @@ namespace TSKT
                     return true;
                 }
             }
+            return false;
+        }
+
+        public bool TryGetPlayingChannel(string channel, out SoundObject soundObject)
+        {
+            foreach (var it in soundObjects)
+            {
+                if (it.Channel == channel && it.IsPlaying)
+                {
+                    soundObject = it;
+                    return true;
+                }
+            }
+            soundObject = null;
             return false;
         }
 
