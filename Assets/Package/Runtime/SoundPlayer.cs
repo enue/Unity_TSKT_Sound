@@ -1,11 +1,29 @@
-﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 namespace TSKT
 {
     public class SoundPlayer : MonoBehaviour
     {
+        public readonly struct Task
+        {
+            readonly SoundObject soundObject;
+
+            public Task(SoundObject obj)
+            {
+                soundObject = obj;
+            }
+
+            public Task SetPriority(int priority)
+            {
+                if (soundObject)
+                {
+                    soundObject.Priority = priority;
+                }
+                return this;
+            }
+        }
+
         [SerializeField]
         GameObject soundObjectPrefab = default;
 
@@ -14,11 +32,11 @@ namespace TSKT
 
         readonly List<SoundObject> soundObjects = new List<SoundObject>();
 
-        public SoundObject Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f)
+        public Task Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f)
         {
             if (!audio)
             {
-                return null;
+                return default;
             }
 
             if (channel != null)
@@ -34,7 +52,7 @@ namespace TSKT
                     && it.ElapsedTime < interval
                     && it.IsPlaying)
                 {
-                    return null;
+                    return default;
                 }
             }
 
@@ -48,7 +66,7 @@ namespace TSKT
             soundObject.Play(audio, loop: loop, volume: volume);
             soundObject.Channel = channel;
 
-            return soundObject;
+            return new Task(soundObject);
         }
 
         public void Stop(string channel)
