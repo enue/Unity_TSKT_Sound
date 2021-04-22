@@ -137,6 +137,15 @@ namespace TSKT
             return false;
         }
 
+        public int GetPriority(string channel, int defaultValue = int.MinValue)
+        {
+            if (TryGetPlayingChannel(channel, out var current))
+            {
+                return current.Priority;
+            }
+            return defaultValue;
+        }
+
         public float GetPlayingSoundDuration(bool includeLoop = true)
         {
             var result = 0f;
