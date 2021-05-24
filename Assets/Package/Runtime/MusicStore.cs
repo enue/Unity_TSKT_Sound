@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+#nullable enable
 
 namespace TSKT
 {
@@ -10,9 +11,9 @@ namespace TSKT
     public class MusicStore : ScriptableObject, IMusicStore
     {
         [SerializeField]
-        Music[] musics = default;
+        Music?[] musics = default!;
 
-        public Music Get(string musicName)
+        public Music? Get(string musicName)
         {
             if (musics == null)
             {
@@ -21,7 +22,7 @@ namespace TSKT
             }
             foreach (var it in musics)
             {
-                if (it.name == musicName)
+                if (it && it!.name == musicName)
                 {
                     return it;
                 }

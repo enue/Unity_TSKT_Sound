@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+#nullable enable
 
 #if TSKT_SOUND_ASSETBUNDLE_SUPPORT && TSKT_SOUND_FILE_SUPPORT
 namespace TSKT
@@ -21,7 +22,7 @@ namespace TSKT
             UnityEngine.Assertions.Assert.IsTrue(loadeds.Succeeded, "failed loading music assetbundle. " + loadeds.exception?.ToString());
         }
 
-        public Music Get(string musicName)
+        public Music? Get(string musicName)
         {
             foreach (var it in musics)
             {

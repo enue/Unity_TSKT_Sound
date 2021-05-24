@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine.Audio;
 using Cysharp.Threading.Tasks;
+#nullable enable
 
 namespace TSKT
 {
@@ -9,22 +10,22 @@ namespace TSKT
     public class MusicManager : MonoBehaviour
     {
         [SerializeField]
-        AudioMixerSnapshot defaultSnapshot = default;
+        AudioMixerSnapshot? defaultSnapshot = default;
 
         [SerializeField]
-        AudioMixerSnapshot muteSnapshot = default;
+        AudioMixerSnapshot? muteSnapshot = default;
 
-        AudioSource audioSource;
-        AudioSource AudioSource => audioSource ? audioSource : (audioSource = GetComponent<AudioSource>());
+        AudioSource? audioSource;
+        AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());
 
-        public (Music currentMusic, float position) State => (CurrentMusic, AudioSource.time);
+        public (Music? currentMusic, float position) State => (CurrentMusic, AudioSource.time);
         public bool IsPlaying => AudioSource.isPlaying;
 
-        public Music CurrentMusic { get; private set; }
-        public IMusicStore MusicStore { get; set; }
+        public Music? CurrentMusic { get; private set; }
+        public IMusicStore? MusicStore { get; set; }
         bool fadingOut;
 
-        static public MusicManager Instance { get; private set; }
+        static public MusicManager? Instance { get; private set; }
 
         void Awake()
         {
@@ -48,16 +49,16 @@ namespace TSKT
             }
         }
 
-        public async void Play(Music music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
+        public async void Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
             if (CurrentMusic == music)
             {
                 return;
             }
 
-            if (music && music.Asset)
+            if (music && music!.Asset)
             {
-                music.Asset.LoadAudioData();
+                music.Asset!.LoadAudioData();
             }
             CurrentMusic = music;
 
@@ -71,7 +72,7 @@ namespace TSKT
             var previousClip = AudioSource.clip;
             if (previousClip)
             {
-                var currentMusicAsset = CurrentMusic ? CurrentMusic.Asset : null;
+                var currentMusicAsset = CurrentMusic ? CurrentMusic!.Asset : null;
                 if (previousClip != currentMusicAsset)
                 {
                     previousClip.UnloadAudioData();
@@ -80,7 +81,7 @@ namespace TSKT
 
             if (CurrentMusic)
             {
-                AudioSource.clip = CurrentMusic.Asset;
+                AudioSource.clip = CurrentMusic!.Asset;
                 AudioSource.time = position;
                 AudioSource.loop = CurrentMusic.Loop;
                 AudioSource.Play();
@@ -89,7 +90,10 @@ namespace TSKT
                 {
                     AudioSource.volume = CurrentMusic.Volume;
                     Debug.Assert(defaultSnapshot, "require defaultSnapshot");
-                    defaultSnapshot.TransitionTo(fadeInDuration);
+                    if (defaultSnapshot)
+                    {
+                        defaultSnapshot!.TransitionTo(fadeInDuration);
+                    }
                 }
                 else
                 {
@@ -138,7 +142,7 @@ namespace TSKT
                 if (muteSnapshot)
                 {
                     Debug.Assert(defaultSnapshot, "require defaultSnapshot");
-                    muteSnapshot.TransitionTo(duration);
+                    muteSnapshot!.TransitionTo(duration);
 
                     switch (muteSnapshot.audioMixer.updateMode)
                     {

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+#nullable enable
 
 namespace TSKT
 {
@@ -10,13 +11,13 @@ namespace TSKT
     {
         readonly static HashSet<SoundObject> enabledInstances = new HashSet<SoundObject>();
 
-        AudioSource audioSource;
-        AudioSource AudioSource => audioSource ? audioSource : (audioSource = GetComponent<AudioSource>());
+        AudioSource? audioSource;
+        AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());
 
         float startedTime;
         public float ElapsedTime => Time.realtimeSinceStartup - startedTime;
 
-        public string Channel { get; set; }
+        public string? Channel { get; set; }
         public int Priority { get; set; }
 
         void OnEnable()

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+#nullable enable
 
 namespace TSKT
 {
@@ -7,8 +8,8 @@ namespace TSKT
     public class Music : ScriptableObject
     {
         [SerializeField]
-        AudioClip asset = default;
-        public AudioClip Asset => asset;
+        AudioClip? asset = default;
+        public AudioClip? Asset => asset;
 
         [SerializeField]
         bool loop = true;

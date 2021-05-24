@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+#nullable enable
+
 namespace TSKT
 {
     public class SoundPlayer : MonoBehaviour
@@ -25,14 +27,14 @@ namespace TSKT
         }
 
         [SerializeField]
-        GameObject soundObjectPrefab = default;
+        GameObject? soundObjectPrefab = default;
 
         [SerializeField]
         float interval = 0.1f;
 
         readonly List<SoundObject> soundObjects = new List<SoundObject>();
 
-        public Task Play(AudioClip audio, bool loop = false, string channel = null, float volume = 1f)
+        public Task Play(AudioClip audio, bool loop = false, string? channel = null, float volume = 1f)
         {
             if (!audio)
             {
@@ -59,7 +61,7 @@ namespace TSKT
             var soundObject = soundObjects.FirstOrDefault(_ => !_.Clip);
             if (soundObject == null)
             {
-                var obj = Instantiate(soundObjectPrefab, transform, false);
+                var obj = Instantiate(soundObjectPrefab, transform, false)!;
                 soundObject = obj.GetComponent<SoundObject>();
                 soundObjects.Add(soundObject);
             }
@@ -112,7 +114,7 @@ namespace TSKT
             return false;
         }
 
-        public bool TryGetPlayingChannel(string channel, out SoundObject soundObject)
+        public bool TryGetPlayingChannel(string channel, out SoundObject? soundObject)
         {
             foreach (var it in soundObjects)
             {
@@ -130,7 +132,7 @@ namespace TSKT
         {
             if (TryGetPlayingChannel(channel, out var current))
             {
-                priority = current.Priority;
+                priority = current!.Priority;
                 return true;
             }
             priority = 0;
@@ -141,7 +143,7 @@ namespace TSKT
         {
             if (TryGetPlayingChannel(channel, out var current))
             {
-                return current.Priority;
+                return current!.Priority;
             }
             return defaultValue;
         }
