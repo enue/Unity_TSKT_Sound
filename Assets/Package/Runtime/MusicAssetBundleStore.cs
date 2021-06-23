@@ -12,9 +12,10 @@ namespace TSKT
     {
         Music[] musics = System.Array.Empty<Music>();
 
-        public async void Add(string filename, int priorityOffset)
+        public async void Add(string filename, string filepath, int priority)
         {
-            var loadeds = await AssetBundleUtil.LoadAllAsync<Music>(filename, priorityOffset: priorityOffset);
+            var loader = new LocalAssetBundleLoader();
+            var loadeds = await loader.LoadAllAsync<Music>(filename, filepath, priority: priority);
             if (loadeds.Succeeded)
             {
                 musics = musics.Concat(loadeds.value).ToArray();
