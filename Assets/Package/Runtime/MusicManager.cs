@@ -18,10 +18,10 @@ namespace TSKT
         AudioSource? audioSource;
         AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());
 
-        public (Music? currentMusic, float position) State => (CurrentMusic, AudioSource.time);
+        public (AudioClip? currentMusic, float position) State => (CurrentMusic, AudioSource.time);
         public bool IsPlaying => AudioSource.isPlaying;
 
-        public Music? CurrentMusic { get; private set; }
+        public AudioClip? CurrentMusic { get; private set; }
         public IMusicStore? MusicStore { get; set; }
         bool fadingOut;
 
@@ -48,17 +48,33 @@ namespace TSKT
                 Play(default(Music), fadeOutDuration: fadeOutDuration);
             }
         }
+        public void Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
+        {
+            if (music)
+            {
+                Play(music!.Asset,
+                    loop: music.Loop,
+                    volume: music.Volume,
+                    fadeOutDuration: fadeOutDuration,
+                    position: position,
+                    fadeInDuration: fadeInDuration);
+            }
+            else
+            {
+                Play(null, false, 1f, fadeOutDuration: fadeOutDuration, position: position, fadeInDuration: fadeInDuration);
+            }
+        }
 
-        public async void Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
+        public async void Play(AudioClip? music, bool loop, float volume, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
             if (CurrentMusic == music)
             {
                 return;
             }
 
-            if (music && music!.Asset)
+            if (music)
             {
-                music.Asset!.LoadAudioData();
+                music!.LoadAudioData();
             }
             CurrentMusic = music;
 
@@ -72,8 +88,7 @@ namespace TSKT
             var previousClip = AudioSource.clip;
             if (previousClip)
             {
-                var currentMusicAsset = CurrentMusic ? CurrentMusic!.Asset : null;
-                if (previousClip != currentMusicAsset)
+                if (previousClip != CurrentMusic)
                 {
                     previousClip.UnloadAudioData();
                 }
@@ -81,14 +96,14 @@ namespace TSKT
 
             if (CurrentMusic)
             {
-                AudioSource.clip = CurrentMusic!.Asset;
+                AudioSource.clip = CurrentMusic;
                 AudioSource.time = position;
-                AudioSource.loop = CurrentMusic.Loop;
+                AudioSource.loop = loop;
                 AudioSource.Play();
 
                 if (muteSnapshot)
                 {
-                    AudioSource.volume = CurrentMusic.Volume;
+                    AudioSource.volume = volume;
                     Debug.Assert(defaultSnapshot, "require defaultSnapshot");
                     if (defaultSnapshot)
                     {
@@ -101,12 +116,12 @@ namespace TSKT
                     {
                         await Tween.SoundVolume(AudioSource, fadeInDuration)
                             .From(0f)
-                            .To(CurrentMusic.Volume)
+                            .To(volume)
                             .UniTask;
                     }
                     else
                     {
-                        AudioSource.volume = CurrentMusic.Volume;
+                        AudioSource.volume = volume;
                     }
                 }
             }
