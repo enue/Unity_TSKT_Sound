@@ -8,9 +8,9 @@ namespace TSKT.MusicManagers
 {
     public readonly struct State
     {
-        readonly MusicManager player;
-        readonly Music? currentMusic;
-        readonly float position;
+        public readonly MusicManager player;
+        public readonly Music? currentMusic;
+        public readonly float position;
 
         public State(MusicManager player, float position)
         {
