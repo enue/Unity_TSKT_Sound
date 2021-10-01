@@ -1,9 +1,10 @@
 {
     "name": "TSKT.Sound",
+    "rootNamespace": "",
     "references": [
-        "TSKT.Tween",
-        "TSKTFile",
-        "UniTask"
+        "GUID:c2e5703bbaa79c6448a53299d1424d70",
+        "GUID:2245217fb1e4289429e8a92b7b18d438",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

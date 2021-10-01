@@ -1,7 +1,8 @@
 {
     "name": "TSKT",
+    "rootNamespace": "",
     "references": [
-        "TSKT.Sound"
+        "GUID:db7fb07202f95d648b077624933021a3"
     ],
     "includePlatforms": [
         "Editor"
@@ -12,5 +13,6 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": []
+    "versionDefines": [],
+    "noEngineReferences": false
 }
