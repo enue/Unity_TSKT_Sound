@@ -19,9 +19,16 @@ namespace TSKT.MusicManagers
             this.position = position;
         }
 
-        readonly public void Resume(float fadeOutDuration = 1f, float fadeInDuration = 0f)
+        public readonly void Resume(float fadeOutDuration = 1f, float fadeInDuration = 0f)
         {
             player.Play(currentMusic, position: position,
+                fadeInDuration: fadeInDuration,
+                fadeOutDuration: fadeOutDuration);
+        }
+
+        public readonly void Replay(float fadeOutDuration = 1f, float fadeInDuration = 0f)
+        {
+            player.Play(currentMusic,
                 fadeInDuration: fadeInDuration,
                 fadeOutDuration: fadeOutDuration);
         }
