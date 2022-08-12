@@ -32,9 +32,9 @@ namespace TSKT
         [SerializeField]
         float interval = 0.1f;
 
-        readonly List<SoundObject> soundObjects = new List<SoundObject>();
+        readonly List<SoundObject> soundObjects = new();
 
-        public Task Play(AudioClip audio, bool loop = false, string? channel = null, float volume = 1f)
+        public Task Play(AudioClip audio, bool loop = false, string? channel = null, float volume = 1f, Vector3? position = null)
         {
             if (!audio)
             {
@@ -67,6 +67,10 @@ namespace TSKT
             }
             soundObject.Play(audio, loop: loop, volume: volume);
             soundObject.Channel = channel;
+            if (position.HasValue)
+            {
+                soundObject.transform.position = position.Value;
+            }
 
             return new Task(soundObject);
         }
