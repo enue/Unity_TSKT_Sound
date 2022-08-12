@@ -8,19 +8,17 @@ namespace TSKT
 {
     public class SoundManager : SoundPlayer
     {
-        public static SoundManager? Instance { get; protected set; }
+        readonly static List<SoundManager> instances = new();
+        public static SoundManager? Instance => instances.LastOrDefault();
 
-        void Awake()
+        void OnEnable()
         {
-            Instance = this;
+            instances.Add(this);
         }
 
-        void OnDestroy()
+        void OnDisable()
         {
-            if (Instance == this)
-            {
-                Instance = null;
-            }
+            instances.Remove(this);
         }
     }
 }
