@@ -26,6 +26,7 @@ namespace TSKT
         bool fadingOut;
 
         static public MusicManager? Instance { get; private set; }
+        System.Threading.CancellationTokenSource? tweenVolumeCancellationTokenSource;
 
         void Awake()
         {
@@ -97,17 +98,17 @@ namespace TSKT
                 }
                 else
                 {
-                    if (fadeInDuration > 0f)
+                    tweenVolumeCancellationTokenSource?.Cancel();
+                    tweenVolumeCancellationTokenSource?.Dispose();
+                    tweenVolumeCancellationTokenSource = new();
+                    var token = tweenVolumeCancellationTokenSource.Token;
+                    await TweenVolume(0f, CurrentMusic.Volume, fadeInDuration, token);
+                    if (token.IsCancellationRequested)
                     {
-                        await Tween.SoundVolume(AudioSource, fadeInDuration)
-                            .From(0f)
-                            .To(CurrentMusic.Volume)
-                            .UniTask;
+                        return;
                     }
-                    else
-                    {
-                        AudioSource.volume = CurrentMusic.Volume;
-                    }
+                    tweenVolumeCancellationTokenSource.Dispose();
+                    tweenVolumeCancellationTokenSource = null;
                 }
             }
             else
@@ -159,7 +160,17 @@ namespace TSKT
                 }
                 else
                 {
-                    await Tween.SoundVolume(AudioSource, duration).To(0f).UniTask;
+                    tweenVolumeCancellationTokenSource?.Cancel();
+                    tweenVolumeCancellationTokenSource?.Dispose();
+                    tweenVolumeCancellationTokenSource = new();
+                    var token = tweenVolumeCancellationTokenSource.Token;
+                    await TweenVolume(AudioSource.volume, 0f, duration, token);
+                    if (token.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    tweenVolumeCancellationTokenSource.Dispose();
+                    tweenVolumeCancellationTokenSource = null;
                 }
                 AudioSource.Stop();
 
@@ -168,5 +179,36 @@ namespace TSKT
         }
 
         public AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
+
+        async UniTask TweenVolume(float from, float to, float duration, System.Threading.CancellationToken cancellationToken)
+        {
+            if (duration == 0f)
+            {
+                AudioSource.volume = to;
+                return;
+            }
+
+            var startedTime = Time.realtimeSinceStartup;
+            while (true)
+            {
+                await UniTask.Yield();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                if (!AudioSource)
+                {
+                    break;
+                }
+                var elapsedTime = Time.realtimeSinceStartup - startedTime;
+                var t = Mathf.Clamp01(elapsedTime / duration);
+                AudioSource.volume = Mathf.Lerp(from, to, t);
+                if (t >= 1f)
+                {
+                    break;
+                }
+            }
+        }
     }
 }

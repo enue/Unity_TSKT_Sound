@@ -14,25 +14,6 @@
       "dependencies": {},
       "hash": "32d8931850768c9f586ca35fb88e31b24e9ab742"
     },
-    "com.github.enue.tskt_math": {
-      "version": "https://github.com/enue/Unity_TSKT_Math.git?path=Assets/Package",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {
-        "com.unity.mathematics": "1.1.0"
-      },
-      "hash": "0a7bd66fcdca575598fb8381b685bb4a465c102e"
-    },
-    "com.github.enue.tskt_tween": {
-      "version": "https://github.com/enue/Unity_TSKT_Tween.git?path=Assets/Package",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {
-        "com.cysharp.unitask": "2.3.3",
-        "com.github.enue.tskt_math": "0.21.5"
-      },
-      "hash": "1229bfbfccd76074eeeaf60e1ac8ed5254382892"
-    },
     "com.unity.ai.navigation": {
       "version": "1.1.1",
       "depth": 0,
