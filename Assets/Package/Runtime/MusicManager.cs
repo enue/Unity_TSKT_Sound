@@ -75,7 +75,7 @@ namespace TSKT
             }
             CurrentMusic = music;
 
-            await FadeOutInternal(fadeOutDuration, cancellationTokenSource.Token);
+            await FadeOut(AudioSource, fadeOutDuration, muteSnapshot, cancellationTokenSource.Token);
 
             var previousClip = AudioSource.clip;
             if (previousClip)
@@ -97,15 +97,12 @@ namespace TSKT
                 if (muteSnapshot)
                 {
                     AudioSource.volume = CurrentMusic.Volume;
-                    Debug.Assert(defaultSnapshot, "require defaultSnapshot");
-                    if (defaultSnapshot)
-                    {
-                        defaultSnapshot!.TransitionTo(fadeInDuration);
-                    }
+                    UnityEngine.Assertions.Assert.IsTrue(defaultSnapshot, "require defaultSnapshot");
+                    defaultSnapshot!.TransitionTo(fadeInDuration);
                 }
                 else
                 {
-                    await TweenVolume(0f, CurrentMusic.Volume, fadeInDuration, cancellationTokenSource.Token);
+                    await TweenVolume(AudioSource, 0f, CurrentMusic.Volume, fadeInDuration, cancellationTokenSource.Token);
                 }
             }
             else
@@ -131,13 +128,14 @@ namespace TSKT
             }
         }
 
-        async UniTask FadeOutInternal(float duration, System.Threading.CancellationToken cancellationToken)
+        public AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
+
+        static async UniTask FadeOut(AudioSource target, float duration, AudioMixerSnapshot? muteSnapshot , System.Threading.CancellationToken cancellationToken)
         {
-            if (AudioSource.isPlaying)
+            if (target.isPlaying)
             {
                 if (muteSnapshot)
                 {
-                    Debug.Assert(defaultSnapshot, "require defaultSnapshot");
                     muteSnapshot!.TransitionTo(duration);
 
                     switch (muteSnapshot.audioMixer.updateMode)
@@ -155,19 +153,17 @@ namespace TSKT
                 }
                 else
                 {
-                    await TweenVolume(AudioSource.volume, 0f, duration, cancellationToken);
+                    await TweenVolume(target, target.volume, 0f, duration, cancellationToken);
                 }
-                AudioSource.Stop();
+                target.Stop();
             }
         }
 
-        public AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
-
-        async UniTask TweenVolume(float from, float to, float duration, System.Threading.CancellationToken cancellationToken)
+        static async UniTask TweenVolume(AudioSource target, float from, float to, float duration, System.Threading.CancellationToken cancellationToken)
         {
             if (duration == 0f)
             {
-                AudioSource.volume = to;
+                target.volume = to;
                 return;
             }
 
@@ -176,13 +172,13 @@ namespace TSKT
             {
                 await UniTask.Yield(cancellationToken);
 
-                if (!AudioSource)
+                if (!target)
                 {
                     break;
                 }
                 var elapsedTime = Time.realtimeSinceStartup - startedTime;
                 var t = Mathf.Clamp01(elapsedTime / duration);
-                AudioSource.volume = Mathf.Lerp(from, to, t);
+                target.volume = Mathf.Lerp(from, to, t);
                 if (t >= 1f)
                 {
                     break;
