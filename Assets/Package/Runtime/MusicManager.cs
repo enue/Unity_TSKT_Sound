@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine.Audio;
 using Cysharp.Threading.Tasks;
+using System;
 #nullable enable
 
 namespace TSKT
@@ -23,14 +24,19 @@ namespace TSKT
 
         public Music? CurrentMusic { get; private set; }
         public IMusicStore? MusicStore { get; set; }
-        bool fadingOut;
 
         static public MusicManager? Instance { get; private set; }
-        System.Threading.CancellationTokenSource? tweenVolumeCancellationTokenSource;
+        System.Threading.CancellationTokenSource? cancellationTokenSource;
 
         void Awake()
         {
             Instance = this;
+        }
+        void OnDestroy()
+        {
+            cancellationTokenSource?.Cancel();
+            cancellationTokenSource?.Dispose();
+            cancellationTokenSource = null;
         }
 
         public void Play(string musicName, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
@@ -46,29 +52,30 @@ namespace TSKT
             }
             else
             {
-                Play(default(Music), fadeOutDuration: fadeOutDuration);
+                Play((Music?)null, fadeOutDuration: fadeOutDuration);
             }
         }
 
-        public async void Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
+        public void Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
+        {
+            PlayInternal(music, fadeOutDuration, position, fadeInDuration).Forget();
+        }
+        async UniTask PlayInternal(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
             if (CurrentMusic == music)
             {
                 return;
             }
-
+            cancellationTokenSource?.Cancel();
+            cancellationTokenSource?.Dispose();
+            cancellationTokenSource = new();
             if (music && music!.Asset)
             {
                 music.Asset!.LoadAudioData();
             }
             CurrentMusic = music;
 
-            if (fadingOut)
-            {
-                return;
-            }
-
-            await FadeOutInternal(fadeOutDuration);
+            await FadeOutInternal(fadeOutDuration, cancellationTokenSource.Token);
 
             var previousClip = AudioSource.clip;
             if (previousClip)
@@ -98,17 +105,7 @@ namespace TSKT
                 }
                 else
                 {
-                    tweenVolumeCancellationTokenSource?.Cancel();
-                    tweenVolumeCancellationTokenSource?.Dispose();
-                    tweenVolumeCancellationTokenSource = new();
-                    var token = tweenVolumeCancellationTokenSource.Token;
-                    await TweenVolume(0f, CurrentMusic.Volume, fadeInDuration, token);
-                    if (token.IsCancellationRequested)
-                    {
-                        return;
-                    }
-                    tweenVolumeCancellationTokenSource.Dispose();
-                    tweenVolumeCancellationTokenSource = null;
+                    await TweenVolume(0f, CurrentMusic.Volume, fadeInDuration, cancellationTokenSource.Token);
                 }
             }
             else
@@ -122,24 +119,22 @@ namespace TSKT
             FadeOut(0f).Forget();
         }
 
-        public UniTask FadeOut(float fadeOutDutation)
+        public async UniTask FadeOut(float fadeOutDutation)
         {
-            Play(default(Music), fadeOutDutation);
-            return UniTask.WaitWhile(() => fadingOut);
+            try
+            {
+                await PlayInternal(null, fadeOutDutation);
+            }
+            catch (OperationCanceledException)
+            {
+                // nop
+            }
         }
 
-        async UniTask FadeOutInternal(float duration)
+        async UniTask FadeOutInternal(float duration, System.Threading.CancellationToken cancellationToken)
         {
-            if (fadingOut)
-            {
-                await UniTask.WaitWhile(() => fadingOut);
-                return;
-            }
-
             if (AudioSource.isPlaying)
             {
-                fadingOut = true;
-
                 if (muteSnapshot)
                 {
                     Debug.Assert(defaultSnapshot, "require defaultSnapshot");
@@ -148,10 +143,10 @@ namespace TSKT
                     switch (muteSnapshot.audioMixer.updateMode)
                     {
                         case AudioMixerUpdateMode.Normal:
-                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: false);
+                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: false, cancellationToken: cancellationToken);
                             break;
                         case AudioMixerUpdateMode.UnscaledTime:
-                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: true);
+                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: true, cancellationToken: cancellationToken);
                             break;
                         default:
                             Debug.LogError("unknown updateMode : " + muteSnapshot.audioMixer.updateMode);
@@ -160,21 +155,9 @@ namespace TSKT
                 }
                 else
                 {
-                    tweenVolumeCancellationTokenSource?.Cancel();
-                    tweenVolumeCancellationTokenSource?.Dispose();
-                    tweenVolumeCancellationTokenSource = new();
-                    var token = tweenVolumeCancellationTokenSource.Token;
-                    await TweenVolume(AudioSource.volume, 0f, duration, token);
-                    if (token.IsCancellationRequested)
-                    {
-                        return;
-                    }
-                    tweenVolumeCancellationTokenSource.Dispose();
-                    tweenVolumeCancellationTokenSource = null;
+                    await TweenVolume(AudioSource.volume, 0f, duration, cancellationToken);
                 }
                 AudioSource.Stop();
-
-                fadingOut = false;
             }
         }
 
@@ -191,11 +174,7 @@ namespace TSKT
             var startedTime = Time.realtimeSinceStartup;
             while (true)
             {
-                await UniTask.Yield();
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
+                await UniTask.Yield(cancellationToken);
 
                 if (!AudioSource)
                 {
