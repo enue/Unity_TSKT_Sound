@@ -19,13 +19,13 @@ namespace TSKT
         AudioSource? audioSource;
         AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());
 
-        public MusicManagers.State State => new MusicManagers.State(this, AudioSource.time);
+        public MusicManagers.State State => new(this, AudioSource.time);
         public bool IsPlaying => AudioSource.isPlaying;
 
         public Music? CurrentMusic { get; private set; }
         public IMusicStore? MusicStore { get; set; }
 
-        static public MusicManager? Instance { get; private set; }
+        public static MusicManager? Instance { get; private set; }
         System.Threading.CancellationTokenSource? cancellationTokenSource;
 
         void Awake()
@@ -183,6 +183,27 @@ namespace TSKT
                 {
                     break;
                 }
+            }
+        }
+
+        public async Awaitable WaitEndOfCurrentMusic()
+        {
+            var current = CurrentMusic;
+            if (!current)
+            {
+                return;
+            }
+            while (true)
+            {
+                if (CurrentMusic != current)
+                {
+                    return;
+                }
+                if (!AudioSource.isPlaying)
+                {
+                    return;
+                }
+                await Awaitable.NextFrameAsync();
             }
         }
     }
