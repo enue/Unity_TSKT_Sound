@@ -1,12 +1,12 @@
 {
     "name": "com.github.enue.tskt_sound",
     "displayName": "TSKT Sound",
-    "version": "0.4.8",
-    "unity": "2023.1",
+    "version": "0.4.9",
+    "unity": "2023.2",
     "description": "",
     "keywords": [],
     "category": "",
     "dependencies": {
-        "com.cysharp.unitask": "2.3.3"
+        "com.cysharp.unitask": "2.5.3"
     }
 }
