@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Audio;
 #nullable enable
 
 namespace TSKT
@@ -34,7 +36,7 @@ namespace TSKT
 
         readonly List<SoundObject> soundObjects = new();
 
-        public Task Play(AudioClip audio, bool loop = false, string? channel = null, float volume = 1f, Vector3? position = null)
+        public Task Play(AudioResource audio, bool loop = false, string? channel = null, float volume = 1f, Vector3? position = null)
         {
             if (!audio)
             {
@@ -50,7 +52,7 @@ namespace TSKT
             // 同じ音を同時に再生しない
             foreach (var it in soundObjects)
             {
-                if (it.Clip == audio
+                if (it.Resource == audio
                     && it.ElapsedTime < interval
                     && it.IsPlaying)
                 {
@@ -58,7 +60,7 @@ namespace TSKT
                 }
             }
 
-            var soundObject = soundObjects.FirstOrDefault(_ => !_.Clip);
+            var soundObject = soundObjects.FirstOrDefault(_ => !_.Resource);
             if (soundObject == null)
             {
                 var obj = Instantiate(soundObjectPrefab, transform, false)!;
@@ -106,11 +108,11 @@ namespace TSKT
             return false;
         }
 
-        public bool IsPlaying(AudioClip clip)
+        public bool IsPlaying(AudioResource resource)
         {
             foreach (var it in soundObjects)
             {
-                if (it.Clip == clip && it.IsPlaying)
+                if (it.Resource == resource && it.IsPlaying)
                 {
                     return true;
                 }
@@ -161,7 +163,10 @@ namespace TSKT
                 {
                     if (includeLoop || !it.Loop)
                     {
-                        result = Mathf.Max(result, it.Clip.length);
+                        if (it.Resource is AudioClip clip)
+                        {
+                            result = Mathf.Max(result, clip.length);
+                        }
                     }
                 }
             }

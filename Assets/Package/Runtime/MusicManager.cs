@@ -69,9 +69,9 @@ namespace TSKT
             cancellationTokenSource?.Cancel();
             cancellationTokenSource?.Dispose();
             cancellationTokenSource = new();
-            if (music && music!.Asset)
+            if (music && music!.Asset && music.Asset is AudioClip clip)
             {
-                music.Asset!.LoadAudioData();
+                clip.LoadAudioData();
             }
             CurrentMusic = music;
 
@@ -89,7 +89,7 @@ namespace TSKT
 
             if (CurrentMusic)
             {
-                AudioSource.clip = CurrentMusic!.Asset;
+                AudioSource.resource = CurrentMusic!.Asset;
                 AudioSource.time = position;
                 AudioSource.loop = CurrentMusic.Loop;
                 AudioSource.Play();
@@ -107,7 +107,7 @@ namespace TSKT
             }
             else
             {
-                AudioSource.clip = null;
+                AudioSource.resource = null;
             }
         }
 
