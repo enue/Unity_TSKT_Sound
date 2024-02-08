@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.Audio;
-using Cysharp.Threading.Tasks;
 using System;
 #nullable enable
 
@@ -23,7 +22,6 @@ namespace TSKT
         public bool IsPlaying => AudioSource.isPlaying;
 
         public Music? CurrentMusic { get; private set; }
-        public IMusicStore? MusicStore { get; set; }
 
         public static MusicManager? Instance { get; private set; }
         System.Threading.CancellationTokenSource? cancellationTokenSource;
@@ -39,28 +37,11 @@ namespace TSKT
             cancellationTokenSource = null;
         }
 
-        public void Play(string musicName, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
-        {
-            Play(MusicStore?.Get(musicName), fadeOutDuration: fadeOutDuration, position: position, fadeInDuration: fadeInDuration);
-        }
-
-        public void Play(MusicSymbol symbol, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
-        {
-            if (symbol)
-            {
-                Play(MusicStore?.Get(symbol.name), fadeOutDuration: fadeOutDuration, position: position, fadeInDuration: fadeInDuration);
-            }
-            else
-            {
-                Play((Music?)null, fadeOutDuration: fadeOutDuration);
-            }
-        }
-
         public void Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
-            PlayInternal(music, fadeOutDuration, position, fadeInDuration).Forget();
+            _ = PlayInternal(music, fadeOutDuration, position, fadeInDuration);
         }
-        async UniTask PlayInternal(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
+        async Awaitable PlayInternal(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f)
         {
             if (CurrentMusic == music)
             {
@@ -77,8 +58,7 @@ namespace TSKT
 
             await FadeOut(AudioSource, fadeOutDuration, muteSnapshot, cancellationTokenSource.Token);
 
-            var previousClip = AudioSource.clip;
-            if (previousClip)
+            if (AudioSource.resource is AudioClip previousClip && previousClip)
             {
                 var currentMusicAsset = CurrentMusic ? CurrentMusic!.Asset : null;
                 if (previousClip != currentMusicAsset)
@@ -113,14 +93,14 @@ namespace TSKT
 
         public void Stop()
         {
-            FadeOut(0f).Forget();
+            _ = FadeOut(0f);
         }
 
-        public async UniTask FadeOut(float fadeOutDutation)
+        public async Awaitable FadeOut(float fadeOutDuration)
         {
             try
             {
-                await PlayInternal(null, fadeOutDutation);
+                await PlayInternal(null, fadeOutDuration);
             }
             catch (OperationCanceledException)
             {
@@ -130,7 +110,7 @@ namespace TSKT
 
         public AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
 
-        static async UniTask FadeOut(AudioSource target, float duration, AudioMixerSnapshot? muteSnapshot , System.Threading.CancellationToken cancellationToken)
+        static async Awaitable FadeOut(AudioSource target, float duration, AudioMixerSnapshot? muteSnapshot , System.Threading.CancellationToken cancellationToken)
         {
             if (target.isPlaying)
             {
@@ -141,10 +121,10 @@ namespace TSKT
                     switch (muteSnapshot.audioMixer.updateMode)
                     {
                         case AudioMixerUpdateMode.Normal:
-                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: false, cancellationToken: cancellationToken);
+                            await Awaitable.WaitForSecondsAsync(duration, cancellationToken);
                             break;
                         case AudioMixerUpdateMode.UnscaledTime:
-                            await UniTask.Delay((int)(1000f * duration), ignoreTimeScale: true, cancellationToken: cancellationToken);
+                            await System.Threading.Tasks.Task.Delay((int)(1000f * duration), cancellationToken: cancellationToken);
                             break;
                         default:
                             Debug.LogError("unknown updateMode : " + muteSnapshot.audioMixer.updateMode);
@@ -159,23 +139,18 @@ namespace TSKT
             }
         }
 
-        static async UniTask TweenVolume(AudioSource target, float from, float to, float duration, System.Threading.CancellationToken cancellationToken)
+        static async Awaitable TweenVolume(AudioSource target, float from, float to, float duration, System.Threading.CancellationToken cancellationToken)
         {
             if (duration == 0f)
             {
                 target.volume = to;
                 return;
             }
-
             var startedTime = Time.realtimeSinceStartup;
-            while (true)
-            {
-                await UniTask.Yield(cancellationToken);
 
-                if (!target)
-                {
-                    break;
-                }
+            await Awaitable.NextFrameAsync(cancellationToken);
+            while (target)
+            {
                 var elapsedTime = Time.realtimeSinceStartup - startedTime;
                 var t = Mathf.Clamp01(elapsedTime / duration);
                 target.volume = Mathf.Lerp(from, to, t);
@@ -183,6 +158,7 @@ namespace TSKT
                 {
                     break;
                 }
+                await Awaitable.NextFrameAsync(cancellationToken);
             }
         }
 
