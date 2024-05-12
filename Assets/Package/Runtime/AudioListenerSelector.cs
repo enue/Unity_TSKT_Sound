@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TSKT.MusicManagers
+namespace TSKT.Sounds
 {
     public class AudioListenerSelector : MonoBehaviour
     {
@@ -33,7 +33,7 @@ namespace TSKT.MusicManagers
             {
                 return;
             }
-            var top = instances.Max(_ => _.ascendingPriority);
+            var top = instances.Min(_ => _.ascendingPriority);
             foreach (var it in instances)
             {
                 it.target.enabled = top == it.ascendingPriority;
