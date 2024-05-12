@@ -22,16 +22,16 @@ namespace TSKT
         public int Priority { get; set; }
 
         float? spatialBlend;
-        public void Set3D(bool value)
+        public void Set3D(bool is3D)
         {
             spatialBlend ??= AudioSource.spatialBlend;
-            if (value)
+            if (is3D)
             {
-                AudioSource.spatialBlend = 0f;
+                AudioSource.spatialBlend = spatialBlend.Value;
             }
             else
             {
-                AudioSource.spatialBlend = spatialBlend.Value;
+                AudioSource.spatialBlend = 0f;
             }
         }
 
