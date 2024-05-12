@@ -66,13 +66,15 @@ namespace TSKT
                 soundObject = obj.GetComponent<SoundObject>();
                 soundObjects.Add(soundObject);
             }
-            soundObject.Play(audio, loop: loop, volume: volume);
-            soundObject.Channel = channel;
+
+            soundObject.Set3D(position.HasValue);
             if (position.HasValue)
             {
                 soundObject.transform.position = position.Value;
             }
 
+            soundObject.Play(audio, loop: loop, volume: volume);
+            soundObject.Channel = channel;
             return new Task(soundObject);
         }
 

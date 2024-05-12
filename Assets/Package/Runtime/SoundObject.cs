@@ -21,6 +21,20 @@ namespace TSKT
         public string? Channel { get; set; }
         public int Priority { get; set; }
 
+        float? spatialBlend;
+        public void Set3D(bool value)
+        {
+            spatialBlend ??= AudioSource.spatialBlend;
+            if (value)
+            {
+                AudioSource.spatialBlend = 0f;
+            }
+            else
+            {
+                AudioSource.spatialBlend = spatialBlend.Value;
+            }
+        }
+
         void OnEnable()
         {
             enabledInstances.Add(this);
