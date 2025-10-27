@@ -26,6 +26,63 @@ namespace TSKT
                 return this;
             }
         }
+        public readonly struct Builder
+        {
+            readonly SoundPlayer owner;
+            readonly AudioResource audio;
+            readonly bool loop;
+            readonly float volume;
+            readonly Vector3? position;
+            readonly int? priority;
+            readonly string? channel;
+
+            public Builder(SoundPlayer owner, AudioResource audio)
+            {
+                this.owner = owner;
+                this.audio = audio;
+                loop = false;
+                volume = 1f;
+                position = null;
+                priority = null;
+                channel = null;
+            }
+            Builder(SoundPlayer owner, AudioResource audio, bool loop, float volume, Vector3? position, int? priority, string? channel)
+            {
+                this.owner = owner;
+                this.audio = audio;
+                this.loop = loop;
+                this.volume = volume;
+                this.position = position;
+                this.priority = priority;
+                this.channel = channel;
+            }
+            public Builder With(bool? loop = null, float? volume = null, Vector3? position = null, int? priority = null, string? channel = null)
+            {
+                return new Builder(owner, audio,
+                    loop: loop ?? this.loop,
+                    volume: volume ?? this.volume,
+                    position: position ?? this.position,
+                    priority: priority ?? this.priority,
+                    channel: channel ?? this.channel);
+            }
+            public readonly bool TryPlay()
+            {
+                if (priority.HasValue && channel != null)
+                {
+                    if (owner.GetPriority(channel) >= priority.Value)
+                    {
+                        return false;
+                    }
+                    owner.Play(audio, loop: loop, channel: channel, volume: volume, position: position)
+                        .SetPriority(priority.Value);
+                }
+                else
+                {
+                    owner.Play(audio, loop: loop, channel: channel, volume: volume, position: position);
+                }
+                return true;
+            }
+        }
 
         [SerializeField]
         GameObject? soundObjectPrefab = default;
@@ -173,5 +230,6 @@ namespace TSKT
             }
             return result;
         }
+        public virtual Builder From(AudioResource audio) => new(this, audio);
     }
 }
