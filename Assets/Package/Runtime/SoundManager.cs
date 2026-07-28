@@ -10,6 +10,12 @@ namespace TSKT
     {
         readonly static List<SoundManager> instances = new();
         public static SoundManager? Instance { get; private set; }
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void Init()
+        {
+            instances.Clear();
+            Instance = null;
+        }
 
         [SerializeField]
         int ascendingPriority;

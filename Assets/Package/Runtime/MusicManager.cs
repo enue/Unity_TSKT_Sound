@@ -24,6 +24,12 @@ namespace TSKT
         public Music? CurrentMusic { get; private set; }
 
         public static MusicManager? Instance { get; private set; }
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void Init()
+        {
+            Instance = null;
+        }
+
         System.Threading.CancellationTokenSource? cancellationTokenSource;
 
         void Awake()

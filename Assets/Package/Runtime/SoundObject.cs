@@ -11,6 +11,11 @@ namespace TSKT
     public class SoundObject : MonoBehaviour
     {
         readonly static HashSet<SoundObject> enabledInstances = new HashSet<SoundObject>();
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void Init()
+        {
+            enabledInstances.Clear();
+        }
 
         AudioSource? audioSource;
         AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());
