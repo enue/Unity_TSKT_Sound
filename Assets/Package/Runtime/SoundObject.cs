@@ -10,12 +10,14 @@ namespace TSKT
     [RequireComponent(typeof(AudioSource))]
     public class SoundObject : MonoBehaviour
     {
-        readonly static HashSet<SoundObject> enabledInstances = new HashSet<SoundObject>();
+        readonly static HashSet<SoundObject> enabledInstances = new();
+#if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
         {
             enabledInstances.Clear();
         }
+#endif
 
         AudioSource? audioSource;
         AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());

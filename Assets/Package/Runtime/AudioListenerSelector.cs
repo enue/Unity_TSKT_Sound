@@ -9,11 +9,13 @@ namespace TSKT.Sounds
     public class AudioListenerSelector : MonoBehaviour
     {
         readonly static List<AudioListenerSelector> instances = new();
+#if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
         {
             instances.Clear();
         }
+#endif
 
         [SerializeField]
         AudioListener target = default!;

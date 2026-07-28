@@ -9,13 +9,14 @@ namespace TSKT
     public class SoundManager : SoundPlayer
     {
         readonly static List<SoundManager> instances = new();
-        public static SoundManager? Instance { get; private set; }
+#if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
         {
             instances.Clear();
-            Instance = null;
         }
+#endif
+        public static SoundManager? Instance { get; private set; }
 
         [SerializeField]
         int ascendingPriority;
