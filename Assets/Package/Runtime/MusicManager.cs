@@ -111,7 +111,7 @@ namespace TSKT
 
         public AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
 
-        static async Awaitable FadeOut(AudioSource target, float duration, AudioMixerSnapshot? muteSnapshot , System.Threading.CancellationToken cancellationToken)
+        static async Awaitable FadeOut(AudioSource target, float duration, AudioMixerSnapshot? muteSnapshot, System.Threading.CancellationToken cancellationToken)
         {
             if (target.isPlaying)
             {
@@ -125,7 +125,7 @@ namespace TSKT
                             await Awaitable.WaitForSecondsAsync(duration, cancellationToken);
                             break;
                         case AudioMixerUpdateMode.UnscaledTime:
-                            await System.Threading.Tasks.Task.Delay((int)(1000f * duration), cancellationToken: cancellationToken);
+                            await WaitForSecondsRealtimeAsync(duration, cancellationToken);
                             break;
                         default:
                             Debug.LogError("unknown updateMode : " + muteSnapshot.audioMixer.updateMode);
@@ -181,6 +181,14 @@ namespace TSKT
                     return;
                 }
                 await Awaitable.NextFrameAsync();
+            }
+        }
+        static async Awaitable WaitForSecondsRealtimeAsync(float seconds, System.Threading.CancellationToken cancellationToken)
+        {
+            var endTime = Time.realtimeSinceStartupAsDouble + seconds;
+            while (Time.realtimeSinceStartupAsDouble < endTime)
+            {
+                await Awaitable.NextFrameAsync(cancellationToken);
             }
         }
     }
