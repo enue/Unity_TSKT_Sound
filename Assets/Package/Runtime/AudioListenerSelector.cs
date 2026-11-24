@@ -25,26 +25,48 @@ namespace TSKT.Sounds
 
         void OnEnable()
         {
-            instances.Add(this);
+            // priorityが等しいSelectorが複数ある場合、新しい方を選択する
+            instances.Insert(0, this);
             EnableHighestPriorityListener();
         }
         void OnDisable()
         {
             instances.Remove(this);
-            EnableHighestPriorityListener();
+            var top = EnableHighestPriorityListener();
+            // 他に有効にしたListenerがあるなら、自分のListenerは止める。なければ無音にならないようそのままにする
+            if (top && target && target != top!.target)
+            {
+                target.enabled = false;
+            }
         }
 
-        static void EnableHighestPriorityListener()
+        static AudioListenerSelector? EnableHighestPriorityListener()
         {
-            if (instances.Count == 0)
-            {
-                return;
-            }
-            var top = instances.Min(_ => _.ascendingPriority);
+            AudioListenerSelector? top = null;
             foreach (var it in instances)
             {
-                it.target.enabled = top == it.ascendingPriority;
+                // シーン破棄中などでListenerが先に破棄されていることがある
+                if (!it.target)
+                {
+                    continue;
+                }
+                if (!top || it.ascendingPriority < top!.ascendingPriority)
+                {
+                    top = it;
+                }
             }
+            if (!top)
+            {
+                return null;
+            }
+            foreach (var it in instances)
+            {
+                if (it.target)
+                {
+                    it.target.enabled = it.target == top!.target;
+                }
+            }
+            return top;
         }
     }
 }

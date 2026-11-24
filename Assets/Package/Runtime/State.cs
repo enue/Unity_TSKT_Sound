@@ -29,7 +29,8 @@ namespace TSKT.MusicManagers
         {
             player.Play(currentMusic,
                 fadeInDuration: fadeInDuration,
-                fadeOutDuration: fadeOutDuration);
+                fadeOutDuration: fadeOutDuration,
+                forceRestart: true);
         }
     }
 }

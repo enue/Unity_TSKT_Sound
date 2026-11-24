@@ -132,6 +132,8 @@ namespace TSKT
 
             soundObject.Play(audio, loop: loop, volume: volume);
             soundObject.Channel = channel;
+            // 使い回したSoundObjectに前回の優先度が残らないようにする
+            soundObject.Priority = 0;
             return new Task(soundObject);
         }
 
