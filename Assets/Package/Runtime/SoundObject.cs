@@ -1,7 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Audio;
 #nullable enable
 
@@ -10,23 +7,19 @@ namespace TSKT
     [RequireComponent(typeof(AudioSource))]
     public class SoundObject : MonoBehaviour
     {
-        readonly static HashSet<SoundObject> enabledInstances = new();
-#if UNITY_EDITOR
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void Init()
-        {
-            enabledInstances.Clear();
-        }
-#endif
-
         AudioSource? audioSource;
         AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());
 
         float startedTime;
         public float ElapsedTime => Time.realtimeSinceStartup - startedTime;
 
-        public string? Channel { get; set; }
-        public int Priority { get; set; }
+        public string? Channel { get; private set; }
+        public int Priority { get; private set; }
+
+        /// <summary>
+        /// Playのたびに増える。SoundPlayer.Handleが、自分の再生した音がまだこのSoundObjectにあるかを判定するのに使う。
+        /// </summary>
+        public int Generation { get; private set; }
 
         float? spatialBlend;
         public void Set3D(bool is3D)
@@ -42,30 +35,31 @@ namespace TSKT
             }
         }
 
-        void OnEnable()
-        {
-            enabledInstances.Add(this);
-        }
         void OnDisable()
         {
-            enabledInstances.Remove(this);
-
-            var clip = AudioSource.resource as AudioClip;
-            AudioSource.resource = null;
-            if (clip
-                && !clip!.preloadAudioData
-                && clip.loadState == AudioDataLoadState.Loaded)
+            // SoundPlayerはResourceが空のSoundObjectを空きとして使い回す
+            if (audioSource)
             {
-                if (enabledInstances.Count == 0
-                    || !enabledInstances.Any(_ => _.Resource == clip))
-                {
-                    clip.UnloadAudioData();
-                }
+                audioSource!.resource = null;
             }
+            Sounds.AudioDataUsage.Release(usingResource);
+            usingResource = null;
         }
 
-        public void Play(AudioResource source, bool loop, float volume)
+        // AudioDataUsageに使用中として届けてあるリソース
+        AudioResource? usingResource;
+
+        public void Play(AudioResource source, bool loop, float volume, string? channel = null, int priority = 0)
         {
+            ++Generation;
+            Channel = channel;
+            Priority = priority;
+
+            // 同じクリップを続けて鳴らす場合にアンロードされないよう、先に新しい方を届ける
+            Sounds.AudioDataUsage.Acquire(source);
+            Sounds.AudioDataUsage.Release(usingResource);
+            usingResource = source;
+
             AudioSource.resource = source;
             AudioSource.loop = loop;
             AudioSource.volume = volume;

@@ -8,79 +8,33 @@ namespace TSKT
 {
     public class SoundPlayer : MonoBehaviour
     {
-        public readonly struct Task
+        /// <summary>
+        /// Playが返す、再生した音への参照。
+        /// SoundObjectは使い回されるので、別の音の再生に使われたあとは無効になる。
+        /// </summary>
+        public readonly struct Handle
         {
-            readonly SoundObject soundObject;
+            readonly SoundObject? soundObject;
+            readonly int generation;
 
-            public Task(SoundObject obj)
+            public Handle(SoundObject soundObject)
             {
-                soundObject = obj;
+                this.soundObject = soundObject;
+                generation = soundObject.Generation;
             }
 
-            public Task SetPriority(int priority)
-            {
-                if (soundObject)
-                {
-                    soundObject.Priority = priority;
-                }
-                return this;
-            }
-        }
-        public readonly struct Builder
-        {
-            readonly SoundPlayer owner;
-            readonly AudioResource audio;
-            readonly bool loop;
-            readonly float volume;
-            readonly Vector3? position;
-            readonly int? priority;
-            readonly string? channel;
+            /// <summary>
+            /// 再生されなかった場合と、SoundObjectが別の音に使い回されたあとはfalse。
+            /// </summary>
+            public bool IsValid => soundObject && soundObject!.Generation == generation;
+            public bool IsPlaying => IsValid && soundObject!.IsPlaying;
 
-            public Builder(SoundPlayer owner, AudioResource audio)
+            public void Stop()
             {
-                this.owner = owner;
-                this.audio = audio;
-                loop = false;
-                volume = 1f;
-                position = null;
-                priority = null;
-                channel = null;
-            }
-            Builder(SoundPlayer owner, AudioResource audio, bool loop, float volume, Vector3? position, int? priority, string? channel)
-            {
-                this.owner = owner;
-                this.audio = audio;
-                this.loop = loop;
-                this.volume = volume;
-                this.position = position;
-                this.priority = priority;
-                this.channel = channel;
-            }
-            public Builder With(bool? loop = null, float? volume = null, Vector3? position = null, int? priority = null, string? channel = null)
-            {
-                return new Builder(owner, audio,
-                    loop: loop ?? this.loop,
-                    volume: volume ?? this.volume,
-                    position: position ?? this.position,
-                    priority: priority ?? this.priority,
-                    channel: channel ?? this.channel);
-            }
-            public readonly bool TryPlay()
-            {
-                if (priority.HasValue && channel != null)
+                if (IsValid)
                 {
-                    if (owner.GetPriority(channel) >= priority.Value)
-                    {
-                        return false;
-                    }
-                    owner.Play(audio, loop: loop, channel: channel, volume: volume, position: position)
-                        .SetPriority(priority.Value);
+                    soundObject!.Stop();
                 }
-                else
-                {
-                    owner.Play(audio, loop: loop, channel: channel, volume: volume, position: position);
-                }
-                return true;
             }
         }
 
@@ -92,17 +46,14 @@ namespace TSKT
 
         readonly List<SoundObject> soundObjects = new();
 
-        public Task Play(AudioResource audio, bool loop = false, string? channel = null, float volume = 1f, Vector3? position = null)
+        /// <param name="channel">指定すると、同じチャンネルで再生中の音を止めてから再生する。</param>
+        /// <param name="priority">channelとともに指定すると、同じチャンネルで再生中の音の優先度がこの値以上の場合は再生しない。省略すると必ず再生し、再生した音の優先度は0になる。</param>
+        /// <returns>再生しなかった場合はIsValidがfalseのHandle</returns>
+        public Handle Play(AudioResource audio, bool loop = false, string? channel = null, float volume = 1f, Vector3? position = null, int? priority = null)
         {
             if (!audio)
             {
                 return default;
-            }
-
-            if (channel != null)
-            {
-                // 同じチャンネルの音を止める
-                Stop(channel);
             }
 
             // 同じ音を同時に再生しない
@@ -114,6 +65,16 @@ namespace TSKT
                 {
                     return default;
                 }
+            }
+
+            if (channel != null)
+            {
+                if (priority.HasValue && GetPriority(channel) >= priority.Value)
+                {
+                    return default;
+                }
+                // 同じチャンネルの音を止める
+                Stop(channel);
             }
 
             var soundObject = soundObjects.FirstOrDefault(_ => !_.Resource);
@@ -130,11 +91,8 @@ namespace TSKT
                 soundObject.transform.position = position.Value;
             }
 
-            soundObject.Play(audio, loop: loop, volume: volume);
-            soundObject.Channel = channel;
-            // 使い回したSoundObjectに前回の優先度が残らないようにする
-            soundObject.Priority = 0;
-            return new Task(soundObject);
+            soundObject.Play(audio, loop: loop, volume: volume, channel: channel, priority: priority ?? 0);
+            return new Handle(soundObject);
         }
 
         public void Stop(string channel)
@@ -232,6 +190,5 @@ namespace TSKT
             }
             return result;
         }
-        public virtual Builder From(AudioResource audio) => new(this, audio);
     }
 }

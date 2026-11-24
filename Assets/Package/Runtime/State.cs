@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
-using UnityEngine.Audio;
 #nullable enable
 
 namespace TSKT.MusicManagers
@@ -18,16 +16,16 @@ namespace TSKT.MusicManagers
             this.position = position;
         }
 
-        public readonly void Resume(float fadeOutDuration = 1f, float fadeInDuration = 0f)
+        public readonly Awaitable Resume(float fadeOutDuration = 1f, float fadeInDuration = 0f)
         {
-            player.Play(currentMusic, position: position,
+            return player.Play(currentMusic, position: position,
                 fadeInDuration: fadeInDuration,
                 fadeOutDuration: fadeOutDuration);
         }
 
-        public readonly void Replay(float fadeOutDuration = 1f, float fadeInDuration = 0f)
+        public readonly Awaitable Replay(float fadeOutDuration = 1f, float fadeInDuration = 0f)
         {
-            player.Play(currentMusic,
+            return player.Play(currentMusic,
                 fadeInDuration: fadeInDuration,
                 fadeOutDuration: fadeOutDuration,
                 forceRestart: true);

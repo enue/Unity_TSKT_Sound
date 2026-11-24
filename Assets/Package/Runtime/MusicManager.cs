@@ -1,5 +1,4 @@
 ﻿using UnityEngine;
-using System.Collections;
 using UnityEngine.Audio;
 using System;
 #nullable enable
@@ -9,12 +8,6 @@ namespace TSKT
     [RequireComponent(typeof(AudioSource))]
     public class MusicManager : MonoBehaviour
     {
-        [SerializeField]
-        AudioMixerSnapshot? defaultSnapshot = default;
-
-        [SerializeField]
-        AudioMixerSnapshot? muteSnapshot = default;
-
         AudioSource? audioSource;
         AudioSource AudioSource => audioSource ? audioSource! : (audioSource = GetComponent<AudioSource>());
 
@@ -30,6 +23,14 @@ namespace TSKT
 
         System.Threading.CancellationTokenSource? cancellationTokenSource;
 
+        // AudioSource.volume = baseVolume * fade
+        // baseVolumeはAudioSourceが今鳴らしている曲の音量、fadeはフェードの進み具合(0～1)
+        float baseVolume = 1f;
+        float fade = 1f;
+
+        // AudioDataUsageに使用中として届けてある、AudioSourceが今鳴らしているリソース
+        AudioResource? usingResource;
+
 #if UNITY_EDITOR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
@@ -41,6 +42,7 @@ namespace TSKT
         void Awake()
         {
             Instance = this;
+            baseVolume = AudioSource.volume;
         }
         void OnDestroy()
         {
@@ -48,18 +50,21 @@ namespace TSKT
             cancellationTokenSource?.Dispose();
             cancellationTokenSource = null;
 
+            Sounds.AudioDataUsage.Release(usingResource);
+            usingResource = null;
+
             if (ReferenceEquals(Instance, this))
             {
                 Instance = null;
             }
         }
 
+        /// <summary>
+        /// 再生中の曲をフェードアウトしてから曲を再生する。
+        /// 返すAwaitableはフェードインまで終わるか、後続のPlayやStopに割り込まれた時点で完了する。待たなくてもよい。
+        /// </summary>
         /// <param name="forceRestart">trueなら、同じ曲を再生中でも再生し直す</param>
-        public void Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f, bool forceRestart = false)
-        {
-            _ = PlayAndLogException(music, fadeOutDuration, position, fadeInDuration, forceRestart);
-        }
-        async Awaitable PlayAndLogException(Music? music, float fadeOutDuration, float position, float fadeInDuration, bool forceRestart)
+        public async Awaitable Play(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f, bool forceRestart = false)
         {
             try
             {
@@ -75,7 +80,13 @@ namespace TSKT
                 Debug.LogException(ex);
             }
         }
-        async Awaitable PlayInternal(Music? music, float fadeOutDuration = 1f, float position = 0f, float fadeInDuration = 0f, bool forceRestart = false)
+
+        public Awaitable Stop(float fadeOutDuration = 0f)
+        {
+            return Play(null, fadeOutDuration);
+        }
+
+        async Awaitable PlayInternal(Music? music, float fadeOutDuration, float position, float fadeInDuration, bool forceRestart)
         {
             if (CurrentMusic == music && !forceRestart)
             {
@@ -89,120 +100,91 @@ namespace TSKT
             cancellationTokenSource?.Cancel();
             cancellationTokenSource?.Dispose();
             cancellationTokenSource = new();
-            if (music && music!.Asset && music.Asset is AudioClip clip)
-            {
-                clip.LoadAudioData();
-            }
+            var cancellationToken = cancellationTokenSource.Token;
+
             CurrentMusic = music;
             pendingPosition = position;
             transitioning = true;
 
-            await FadeOut(AudioSource, fadeOutDuration, muteSnapshot, cancellationTokenSource.Token);
-
-            if (AudioSource.resource is AudioClip previousClip && previousClip)
+            // フェードアウトの間に次の曲を読み込んでおく。
+            // フェードアウト中に割り込まれたら、finallyで使用中の届けを取り消す
+            var asset = music ? music!.Asset : null;
+            Sounds.AudioDataUsage.Acquire(asset);
+            var handedOver = false;
+            try
             {
-                var currentMusicAsset = CurrentMusic ? CurrentMusic!.Asset : null;
-                if (previousClip != currentMusicAsset)
+                if (asset is AudioClip clip && clip)
                 {
-                    previousClip.UnloadAudioData();
+                    clip.LoadAudioData();
+                }
+
+                if (AudioSource.isPlaying)
+                {
+                    await TweenFade(0f, fadeOutDuration, cancellationToken);
+                    AudioSource.Stop();
+                }
+
+                AudioSource.resource = asset;
+                Sounds.AudioDataUsage.Release(usingResource);
+                usingResource = asset;
+                handedOver = true;
+            }
+            finally
+            {
+                if (!handedOver)
+                {
+                    Sounds.AudioDataUsage.Release(asset);
                 }
             }
 
-            if (CurrentMusic)
+            if (music)
             {
-                AudioSource.resource = CurrentMusic!.Asset;
                 AudioSource.time = position;
-                AudioSource.loop = CurrentMusic.Loop;
+                AudioSource.loop = music.Loop;
+                baseVolume = music.Volume;
+                SetFade(fadeInDuration > 0f ? 0f : 1f);
                 AudioSource.Play();
                 transitioning = false;
 
-                if (muteSnapshot)
-                {
-                    AudioSource.volume = CurrentMusic.Volume;
-                    UnityEngine.Assertions.Assert.IsTrue(defaultSnapshot, "require defaultSnapshot");
-                    defaultSnapshot!.TransitionTo(fadeInDuration);
-                }
-                else
-                {
-                    await TweenVolume(AudioSource, 0f, CurrentMusic.Volume, fadeInDuration, cancellationTokenSource.Token);
-                }
+                await TweenFade(1f, fadeInDuration, cancellationToken);
             }
             else
             {
-                AudioSource.resource = null;
                 transitioning = false;
-            }
-        }
-
-        public void Stop()
-        {
-            _ = PlayAndLogException(null, 0f, 0f, 0f, false);
-        }
-
-        public async Awaitable FadeOut(float fadeOutDuration)
-        {
-            try
-            {
-                await PlayInternal(null, fadeOutDuration);
-            }
-            catch (OperationCanceledException)
-            {
-                // nop
             }
         }
 
         public AudioMixer AudioMixer => AudioSource.outputAudioMixerGroup.audioMixer;
 
-        static async Awaitable FadeOut(AudioSource target, float duration, AudioMixerSnapshot? muteSnapshot, System.Threading.CancellationToken cancellationToken)
+        void SetFade(float value)
         {
-            if (target.isPlaying)
-            {
-                if (muteSnapshot)
-                {
-                    muteSnapshot!.TransitionTo(duration);
-
-                    switch (muteSnapshot.audioMixer.updateMode)
-                    {
-                        case AudioMixerUpdateMode.Normal:
-                            await Awaitable.WaitForSecondsAsync(duration, cancellationToken);
-                            break;
-                        case AudioMixerUpdateMode.UnscaledTime:
-                            await WaitForSecondsRealtimeAsync(duration, cancellationToken);
-                            break;
-                        default:
-                            Debug.LogError("unknown updateMode : " + muteSnapshot.audioMixer.updateMode);
-                            break;
-                    }
-                }
-                else
-                {
-                    await TweenVolume(target, target.volume, 0f, duration, cancellationToken);
-                }
-                target.Stop();
-            }
+            fade = value;
+            AudioSource.volume = baseVolume * fade;
         }
 
-        static async Awaitable TweenVolume(AudioSource target, float from, float to, float duration, System.Threading.CancellationToken cancellationToken)
+        /// <summary>
+        /// 現在のフェード値からtoまで、実時間でdurationかけて変化させる。
+        /// </summary>
+        async Awaitable TweenFade(float to, float duration, System.Threading.CancellationToken cancellationToken)
         {
-            if (duration == 0f)
+            var from = fade;
+            if (duration > 0f && from != to)
             {
-                target.volume = to;
-                return;
-            }
-            var startedTime = Time.realtimeSinceStartup;
-
-            await Awaitable.NextFrameAsync(cancellationToken);
-            while (target)
-            {
-                var elapsedTime = Time.realtimeSinceStartup - startedTime;
-                var t = Mathf.Clamp01(elapsedTime / duration);
-                target.volume = Mathf.Lerp(from, to, t);
-                if (t >= 1f)
+                var startedTime = Time.realtimeSinceStartup;
+                while (true)
                 {
-                    break;
+                    await Awaitable.NextFrameAsync(cancellationToken);
+
+                    var elapsedTime = Time.realtimeSinceStartup - startedTime;
+                    var t = Mathf.Clamp01(elapsedTime / duration);
+                    SetFade(Mathf.Lerp(from, to, t));
+                    if (t >= 1f)
+                    {
+                        break;
+                    }
                 }
-                await Awaitable.NextFrameAsync(cancellationToken);
             }
+            SetFade(to);
         }
 
         public async Awaitable WaitEndOfCurrentMusic()
@@ -223,14 +205,6 @@ namespace TSKT
                     return;
                 }
                 await Awaitable.NextFrameAsync();
-            }
-        }
-        static async Awaitable WaitForSecondsRealtimeAsync(float seconds, System.Threading.CancellationToken cancellationToken)
-        {
-            var endTime = Time.realtimeSinceStartupAsDouble + seconds;
-            while (Time.realtimeSinceStartupAsDouble < endTime)
-            {
-                await Awaitable.NextFrameAsync(cancellationToken);
             }
         }
     }
