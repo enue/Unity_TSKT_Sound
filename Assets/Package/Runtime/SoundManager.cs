@@ -20,7 +20,6 @@ namespace TSKT
 
         [SerializeField]
         int ascendingPriority;
-
         void OnEnable()
         {
             // priorityが等しいManagerが複数ある場合、新しい方を選択する

@@ -42,14 +42,17 @@ namespace TSKT
             {
                 audioSource!.resource = null;
             }
-            Sounds.AudioDataUsage.Release(usingResource);
+            Sounds.AudioDataUsage.Release(usingResource, unloadIfUnused: unloadUsingResource);
             usingResource = null;
         }
 
         // AudioDataUsageに使用中として届けてあるリソース
         AudioResource? usingResource;
+        // usingResourceを手放した時に、誰も使っていなければアンロードするか
+        bool unloadUsingResource = true;
 
-        public void Play(AudioResource source, bool loop, float volume, string? channel = null, int priority = 0)
+        /// <param name="unloadAudioDataWhenUnused">鳴らし終えた時に、ほかで使われていなければアンロードするか</param>
+        public void Play(AudioResource source, bool loop, float volume, string? channel = null, int priority = 0, bool unloadAudioDataWhenUnused = true)
         {
             ++Generation;
             Channel = channel;
@@ -57,8 +60,9 @@ namespace TSKT
 
             // 同じクリップを続けて鳴らす場合にアンロードされないよう、先に新しい方を届ける
             Sounds.AudioDataUsage.Acquire(source);
-            Sounds.AudioDataUsage.Release(usingResource);
+            Sounds.AudioDataUsage.Release(usingResource, unloadIfUnused: unloadUsingResource);
             usingResource = source;
+            unloadUsingResource = unloadAudioDataWhenUnused;
 
             AudioSource.resource = source;
             AudioSource.loop = loop;

@@ -7,7 +7,7 @@ namespace TSKT.Sounds
 {
     /// <summary>
     /// SoundObjectとMusicManagerが使っているAudioClipを数えて、誰も使わなくなったらオーディオデータをアンロードする。
-    /// preloadAudioDataが有効なクリップはアンロードしない。
+    /// preloadAudioDataが有効なクリップと、最後に手放した側がアンロードしないと指定したクリップはアンロードしない。
     /// </summary>
     static class AudioDataUsage
     {
@@ -29,7 +29,8 @@ namespace TSKT.Sounds
             }
         }
 
-        public static void Release(AudioResource? resource)
+        /// <param name="unloadIfUnused">falseなら、誰も使わなくなってもアンロードしない</param>
+        public static void Release(AudioResource? resource, bool unloadIfUnused = true)
         {
             if (resource is not AudioClip clip)
             {
@@ -47,7 +48,8 @@ namespace TSKT.Sounds
             counts.Remove(clip);
 
             // 破棄済みのクリップは触らない
-            if (clip
+            if (unloadIfUnused
+                && clip
                 && !clip.preloadAudioData
                 && clip.loadState == AudioDataLoadState.Loaded)
             {

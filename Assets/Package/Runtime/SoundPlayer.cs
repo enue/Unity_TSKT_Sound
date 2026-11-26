@@ -46,6 +46,10 @@ namespace TSKT
 
         readonly List<SoundObject> soundObjects = new();
 
+        [SerializeField]
+        [Tooltip("鳴らし終えたクリップを、ほかで使われていなければアンロードする。ボイスのように大きくて数の多い音向け。短い音を頻繁に鳴らすプレイヤーでは、アンロードと再デコードを繰り返す方が重いのでオフにする。preloadAudioDataが有効なクリップは、この設定にかかわらずアンロードしない。")]
+        bool unloadAudioDataWhenUnused = false;
+
         /// <param name="channel">指定すると、同じチャンネルで再生中の音を止めてから再生する。</param>
         /// <param name="priority">channelとともに指定すると、同じチャンネルで再生中の音の優先度がこの値以上の場合は再生しない。省略すると必ず再生し、再生した音の優先度は0になる。</param>
         /// <returns>再生しなかった場合はIsValidがfalseのHandle</returns>
@@ -91,7 +95,7 @@ namespace TSKT
                 soundObject.transform.position = position.Value;
             }
 
-            soundObject.Play(audio, loop: loop, volume: volume, channel: channel, priority: priority ?? 0);
+            soundObject.Play(audio, loop: loop, volume: volume, channel: channel, priority: priority ?? 0, unloadAudioDataWhenUnused: unloadAudioDataWhenUnused);
             return new Handle(soundObject);
         }
 
